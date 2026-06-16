@@ -12,7 +12,7 @@
         </router-link>
       </li>
       <li class="nav-item">
-        <router-link to="/dashboard/productos" class="nav-link text-white d-flex align-items-center py-2 px-3 rounded-3" active-class="active bg-warning text-dark fw-bold">
+        <router-link to="/dashboard/habitaciones" class="nav-link text-white d-flex align-items-center py-2 px-3 rounded-3" active-class="active bg-warning text-dark fw-bold">
           <i class="bi bi-door-open me-3 fs-5"></i> Habitaciones (CRUD)
         </router-link>
       </li>

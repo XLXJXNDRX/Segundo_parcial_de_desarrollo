@@ -11,7 +11,8 @@
             <i class="bi bi-building shadow-sm bg-warning p-3 rounded-circle text-white fs-1"></i>
           </div>
           <h1 class="fw-bold text-dark mb-2">Panel de Control General</h1>
-          <p class="text-muted fs-5 mb-0">Software de administración de inventarios, habitaciones y tarifas base de {{ nombreHotel }}.</p>
+          <p class="text-muted fs-5 mb-0">Software de administración de inventarios, habitaciones y tarifas base de {{
+            nombreHotel }}.</p>
         </div>
 
         <div class="d-flex justify-content-between align-items-center mb-4">
@@ -20,15 +21,27 @@
             {{ habitaciones.length }} Habitaciones en Sistema
           </span>
         </div>
-        
+        <div class="row g-4 mt-2">
+          <div v-for="habitacion in habitaciones" :key="habitacion.id" class="col-12 col-md-4 col-lg-3">
+            <div class="card h-100 shadow-sm border-0 rounded-4 text-center p-3" style="background-color: #fffde7;">
+              <div class="card-body">
+                <i class="bi bi-door-closed fs-1 text-warning mb-2"></i>
+
+                <h5 class="fw-bold text-dark mb-1">{{ habitacion.name }}</h5>
+
+                <p class="text-muted small mb-3">Habitación Disponible</p>
+
+                <h4 class="fw-bold text-success">${{ habitacion.price }}<</h4>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="row g-4">
           <div v-for="(habitacion, index) in habitaciones" :key="index" class="col-md-4 col-sm-6">
-            <ProductCardComponent 
-              :nombre="habitacion.titulo" 
-              :precio="Number(habitacion.precio)" 
-              :categoria="habitacion.sala" 
-              @ver-detalle="alertaDetalle(habitacion.titulo, habitacion.sala, habitacion.precio)" 
-            />
+            <ProductCardComponent :nombre="habitacion.titulo" :precio="Number(habitacion.precio)"
+              :categoria="habitacion.sala"
+              @ver-detalle="alertaDetalle(habitacion.titulo, habitacion.sala, habitacion.precio)" />
           </div>
         </div>
       </div>
@@ -40,48 +53,23 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import SidebarComponent from '../components/SidebarComponent.vue'
-import NavbarComponent from '../components/NavbarComponent.vue'
-import ProductCardComponent from '../components/ProductCardComponent.vue'
-import FooterComponent from '../components/FooterComponent.vue'
-
 
 const nombreHotel = ref('Hotel Boutique')
-
-
 const habitaciones = ref([])
 
+const API_URL = 'https://6a11afb93e35d0f37ee38a9f.mockapi.io/products'
 
-const habitacionesBase = [
-  { "titulo": "Habitación 101", "precio": 80000, "sala": "Habitación Sencilla Estándar" },
-  { "titulo": "Habitación 102", "precio": 80000, "sala": "Habitación Sencilla Estándar" },
-  { "titulo": "Habitación 201", "precio": 120000, "sala": "Habitación Doble Premium" },
-  { "titulo": "Habitación 202", "precio": 120000, "sala": "Habitación Doble Premium" },
-  { "titulo": "Habitación 301", "precio": 200000, "sala": "Suite Presidencial" },
-  { "titulo": "Habitación 302", "precio": 200000, "sala": "Suite Presidencial" },
-  { "titulo": "Habitación 103", "precio": 85000, "sala": "Habitación Sencilla Estándar" },
-  { "titulo": "Habitación 203", "precio": 130000, "sala": "Habitación Doble Premium" },
-  { "titulo": "Habitación 104", "precio": 85000, "sala": "Habitación Sencilla Estándar" },
-  { "titulo": "Habitación 303", "precio": 220000, "sala": "Suite Presidencial" }
-]
+const cargarDashboard = async () => {
+  try {
+    const response = await fetch(API_URL)
+    const data = await response.json()
+    habitaciones.value = data
+  } catch (error) {
+    console.error("Error al cargar datos en el dashboard:", error)
+  }
+}
 
 onMounted(() => {
-  
-  const local = localStorage.getItem('mi_hotel_storage')
-  if (local && JSON.parse(local).length > 0) {
-    habitaciones.value = JSON.parse(local)
-  } else {
-    habitaciones.value = [...habitacionesBase]
-    localStorage.setItem('mi_hotel_storage', JSON.stringify(habitaciones.value))
-  }
+  cargarDashboard()
 })
-
-
-const alertaDetalle = (titulo, categoria, precio) => {
-  alert(`[AUDITORÍA INTERNA]\n\nEstructura: ${titulo}\nCategoría: ${categoria}\nTarifa base: $${Number(precio).toLocaleString()} COP\nEstado: Operativa / Limpia.`);
-}
 </script>
-
-<style scoped>
-@import url("https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css");
-</style>

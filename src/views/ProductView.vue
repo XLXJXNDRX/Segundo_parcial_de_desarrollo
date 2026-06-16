@@ -7,24 +7,25 @@
 
       <div class="container my-5 px-4">
         <div class="row g-4">
-          
+
           <div class="col-lg-4">
             <div class="card shadow-sm border-0 p-4 rounded-3 bg-white">
               <h5 class="fw-bold text-dark text-uppercase mb-3">
                 {{ editandoIndex !== null ? 'Editar Registro' : 'Nueva Habitación' }}
               </h5>
               <hr>
-              
+
               <div class="mb-3">
                 <label class="form-label small fw-bold text-secondary">Identificador / Número</label>
                 <input v-model="form.titulo" type="text" class="form-control" placeholder="Ej: Habitación 101" required>
               </div>
-              
+
               <div class="mb-3">
                 <label class="form-label small fw-bold text-secondary">Precio por Noche ($)</label>
-                <input v-model="form.precio" type="number" class="form-control" placeholder="Ej: 80000" min="1" required>
+                <input v-model="form.precio" type="number" class="form-control" placeholder="Ej: 80000" min="1"
+                  required>
               </div>
-              
+
               <div class="mb-4">
                 <label class="form-label small fw-bold text-secondary">Acomodación</label>
                 <select v-model="form.sala" class="form-select">
@@ -33,7 +34,7 @@
                   <option>Habitación Sencilla Estándar</option>
                 </select>
               </div>
-              
+
               <button @click="guardarProducto" class="btn btn-warning fw-bold w-100 text-white shadow-sm">
                 {{ editandoIndex !== null ? 'Actualizar' : 'Registrar Habitación' }}
               </button>
@@ -49,7 +50,7 @@
                 <h6 class="mb-0 fw-bold">Inventario Real en LocalStorage</h6>
                 <span class="badge bg-warning text-dark fw-bold rounded-pill">{{ productos.length }} Habitaciones</span>
               </div>
-              
+
               <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
                   <thead class="table-light text-uppercase small">
@@ -68,8 +69,11 @@
                       <td><span class="text-success fw-bold">${{ Number(p.precio).toLocaleString() }}</span></td>
                       <td><span class="badge bg-light text-dark border">{{ p.sala }}</span></td>
                       <td class="text-end pe-3">
-                        <button @click="seleccionarParaEditar(p, i)" class="btn btn-outline-warning btn-sm me-1">Editar</button>
-                        <button @click="borrar(i)" class="btn btn-outline-danger btn-sm">Quitar</button>
+                        <button @click="seleccionarParaEditar(p, i)"
+                          class="btn btn-outline-warning btn-sm me-1">Editar</button>
+                        <button @click="eliminarHabitacion(p.id)" class="btn btn-danger">
+                          Eliminar
+                        </button>
                       </td>
                     </tr>
                   </tbody>
@@ -88,55 +92,62 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import SidebarComponent from '../components/SidebarComponent.vue'
-import NavbarComponent from '../components/NavbarComponent.vue'
-import FooterComponent from '../components/FooterComponent.vue'
+
+const API_URL = 'https://6a11afb93e35d0f37ee38a9f.mockapi.io/products'
 
 const productos = ref([])
-const form = ref({ titulo: '', precio: '', sala: 'Suite Presidencial' })
-const editandoIndex = ref(null)
+const editandoIndex = ref(null) // Rescata la línea 14 de tu HTML
 
-onMounted(() => {
-  const local = localStorage.getItem('mi_hotel_storage')
-  if (local && JSON.parse(local).length > 0) {
-    productos.value = JSON.parse(local)
-  } else {
-    productos.value = [...habitacionesBase]
-    save()
-  }
+// Estructura idéntica a tus v-model de las líneas 20, 25 y 30
+const form = ref({
+  titulo: '',
+  precio: '',
+  sala: 'Suite Presidencial'
 })
 
-const guardarProducto = () => {
-  if (form.value.titulo && form.value.precio > 0) {
-    if (editandoIndex.value !== null) {
-      productos.value[editandoIndex.value] = { ...form.value }
-      editandoIndex.value = null
-    } else {
-      productos.value.push({ ...form.value })
-    }
-    save()
-    form.value = { titulo: '', precio: '', sala: 'Suite Presidencial' }
+// Traer datos de internet
+const obtenerHabitaciones = async () => {
+  try {
+    const response = await fetch(API_URL)
+    const data = await response.json()
+    productos.value = data
+  } catch (error) {
+    console.error("Error al obtener datos:", error)
   }
 }
 
-const seleccionarParaEditar = (producto, index) => {
-  form.value = { ...producto }
-  editandoIndex.value = index
-}
+// Guardar desde el botón de la línea 36
+const guardarProducto = async () => {
+  if (!form.value.titulo || !form.value.precio) {
+    alert('Campos obligatorios vacíos')
+    return
+  }
 
-const cancelarEdicion = () => {
-  editandoIndex.value = null
-  form.value = { titulo: '', precio: '', sala: 'Suite Presidencial' }
-}
-
-const borrar = (i) => {
-  if (confirm('¿Desea eliminar la habitación?')) {
-    productos.value.splice(i, 1)
-    save()
+  try {
+    await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(form.value)
+    })
+    
+    obtenerHabitaciones() // Refresca
+    form.value = { titulo: '', precio: '', sala: 'Suite Presidencial' } // Limpia
+  } catch (error) {
+    console.error("Error al guardar:", error)
   }
 }
 
-const save = () => {
-  localStorage.setItem('mi_hotel_storage', JSON.stringify(productos.value))
+// Eliminar
+const eliminarHabitacion = async (id) => {
+  try {
+    await fetch(`${API_URL}/${id}`, { method: 'DELETE' })
+    obtenerHabitaciones()
+  } catch (error) {
+    console.error("Error al eliminar:", error)
+  }
 }
+
+onMounted(() => {
+  obtenerHabitaciones()
+})
 </script>
