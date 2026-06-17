@@ -10,10 +10,13 @@
       </span>
 
       <div class="d-flex align-items-center">
-        <router-link to="/dashboard" class="btn btn-outline-light btn-sm me-2 fw-medium">
+        <router-link to="/dashboard" class="btn btn-outline-light btn-sm me-2 fw-medium" title="Ir al Panel de Control">
           <i class="bi bi-speedometer2 me-1"></i>Dashboard
         </router-link>
-        <router-link to="/dashboard/habitaciones" class="btn btn-warning fw-bold d-flex align-items-center">
+        <router-link to="/dashboard/usuarios" class="btn btn-outline-light btn-sm me-2 fw-medium" title="Administrar usuarios">
+          <i class="bi bi-people-fill me-1"></i>Usuarios
+        </router-link>
+        <router-link to="/dashboard/habitaciones" class="btn btn-warning fw-bold d-flex align-items-center" title="Administrar habitaciones">
           <i class="bi bi-door-open me-2"></i> Habitaciones
         </router-link>
         <!-- Aqui elimine el boton de salir -->

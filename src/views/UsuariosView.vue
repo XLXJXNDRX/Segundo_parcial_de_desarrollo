@@ -4,16 +4,22 @@ import SidebarComponent from '../components/SidebarComponent.vue'
 import NavbarComponent from '../components/NavbarComponent.vue'
 import { Modal } from 'bootstrap'
 
-const API_URL = 'https://6a11afb93e35d0f37ee38a9f.mockapi.io/products'
+// Usamos un endpoint que creamos localmente o simulamos con localStorage
+// Para este ejercicio, usaremos un array local que simula una BD
+const usuarios = ref([
+  { id: 1, username: 'admin', email: 'admin@hotel.com' },
+  { id: 2, username: 'user1', email: 'user1@hotel.com' },
+  { id: 3, username: 'user2', email: 'user2@hotel.com' }
+])
 
-const usuarios = ref([])
 const cargando = ref(false)
-const form = ref({ id: null, name: '', price: '' })
+const form = ref({ id: null, username: '', email: '' })
 const editando = ref(false)
 const modoEliminar = ref(false)
 
 const alertaMensaje = ref('')
 const alertaTipo = ref('success')
+const proximoId = ref(4)
 
 const mostrarAlertaTemporizada = (mensaje, tipo = 'success') => {
   alertaMensaje.value = mensaje
@@ -23,23 +29,10 @@ const mostrarAlertaTemporizada = (mensaje, tipo = 'success') => {
   }, 3000)
 }
 
-const obtenerUsuarios = async () => {
-  cargando.value = true
-  try {
-    const response = await fetch(API_URL)
-    usuarios.value = await response.json()
-  } catch (error) {
-    console.error(error)
-    mostrarAlertaTemporizada('Error al cargar la base de datos', 'danger')
-  } finally {
-    cargando.value = false
-  }
-}
-
 const abrirModalCrear = async () => {
   editando.value = false
   modoEliminar.value = false
-  form.value = { id: null, name: '', price: '' }
+  form.value = { id: null, username: '', email: '' }
   await nextTick()
   const modalElement = document.getElementById('usuarioModal')
   if (modalElement) {
@@ -51,7 +44,7 @@ const abrirModalCrear = async () => {
 const abrirModalEditar = async (item) => {
   editando.value = true
   modoEliminar.value = false
-  form.value = { id: item.id, name: item.name, price: item.price }
+  form.value = { id: item.id, username: item.username, email: item.email }
   await nextTick()
   const modalElement = document.getElementById('usuarioModal')
   if (modalElement) {
@@ -63,7 +56,7 @@ const abrirModalEditar = async (item) => {
 const abrirModalEliminar = async (item) => {
   editando.value = false
   modoEliminar.value = true
-  form.value = { id: item.id, name: item.name, price: item.price }
+  form.value = { id: item.id, username: item.username, email: item.email }
   await nextTick()
   const modalElement = document.getElementById('usuarioModal')
   if (modalElement) {
@@ -73,25 +66,24 @@ const abrirModalEliminar = async (item) => {
 }
 
 const guardarUsuario = async () => {
-  if (!form.value.name || !form.value.price) return
+  if (!form.value.username || !form.value.email) return
   
   try {
     if (editando.value) {
-      await fetch(`${API_URL}/${form.value.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form.value)
-      })
+      const index = usuarios.value.findIndex(u => u.id === form.value.id)
+      if (index !== -1) {
+        usuarios.value[index] = { ...form.value }
+      }
       mostrarAlertaTemporizada('Usuario modificado exitosamente', 'success')
     } else {
-      await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form.value)
-      })
+      const nuevoUsuario = {
+        id: proximoId.value++,
+        username: form.value.username,
+        email: form.value.email
+      }
+      usuarios.value.push(nuevoUsuario)
       mostrarAlertaTemporizada('Usuario creado exitosamente', 'success')
     }
-    obtenerUsuarios()
     cerrarModalManualmente()
   } catch (error) {
     console.error(error)
@@ -101,9 +93,8 @@ const guardarUsuario = async () => {
 
 const ejecutarEliminacion = async () => {
   try {
-    await fetch(`${API_URL}/${form.value.id}`, { method: 'DELETE' })
-    mostrarAlertaTemporizada('Usuario eliminado correctamente', 'danger')
-    obtenerUsuarios()
+    usuarios.value = usuarios.value.filter(u => u.id !== form.value.id)
+    mostrarAlertaTemporizada('Usuario eliminado correctamente', 'warning')
     cerrarModalManualmente()
   } catch (error) {
     console.error(error)
@@ -128,8 +119,14 @@ const cerrarModalManualmente = () => {
 }
 
 onMounted(() => {
-  obtenerUsuarios()
+  // Cargar usuarios desde localStorage si existen
+  const usuariosGuardados = localStorage.getItem('usuarios')
+  if (usuariosGuardados) {
+    usuarios.value = JSON.parse(usuariosGuardados)
+    proximoId.value = Math.max(...usuarios.value.map(u => u.id)) + 1
+  }
 })
+
 </script>
 
 <template>
@@ -137,7 +134,7 @@ onMounted(() => {
     <SidebarComponent />
 
     <div class="flex-grow-1 d-flex flex-column">
-      <NavbarComponent :seccion="'Administración de Habitaciones'" />
+      <NavbarComponent :seccion="'Administración de Usuarios'" />
 
       <div class="container my-5 px-4">
         
@@ -150,10 +147,10 @@ onMounted(() => {
         <div class="card p-4 shadow-sm border-0 rounded-4 bg-white">
           <div class="d-flex justify-content-between align-items-center mb-4">
             <h3 class="fw-bold text-dark mb-0">
-              <i class="bi bi-door-open me-2 text-success"></i>Listado de Habitaciones
+              <i class="bi bi-people-fill me-2 text-primary"></i>Listado de Usuarios
             </h3>
-            <button @click="abrirModalCrear" class="btn btn-success fw-bold text-white shadow-sm px-4 rounded-pill">
-              <i class="bi bi-plus-circle-fill me-2"></i>Crear Habitación
+            <button @click="abrirModalCrear" class="btn btn-primary fw-bold text-white shadow-sm px-4 rounded-pill">
+              <i class="bi bi-person-plus-fill me-2"></i>Crear Usuario
             </button>
           </div>
 
@@ -165,10 +162,10 @@ onMounted(() => {
                     <i class="bi bi-hash me-2"></i>ID
                   </th>
                   <th>
-                    <i class="bi bi-door-open me-2"></i>Habitación
+                    <i class="bi bi-person me-2"></i>Usuario
                   </th>
                   <th>
-                    <i class="bi bi-cash me-2"></i>Precio
+                    <i class="bi bi-envelope me-2"></i>Email
                   </th>
                   <th class="text-center">
                     <i class="bi bi-tools me-2"></i>Operaciones
@@ -178,19 +175,24 @@ onMounted(() => {
               <tbody>
                 <tr v-for="item in usuarios" :key="item.id">
                   <td class="fw-bold text-secondary">#{{ item.id }}</td>
-                  <td class="fw-semibold text-dark">{{ item.name }}</td>
-                  <td class="text-muted fw-mono">${{ item.price?.toLocaleString() || 0 }}</td>
+                  <td class="fw-semibold text-dark">{{ item.username }}</td>
+                  <td class="text-muted">{{ item.email }}</td>
                   <td class="text-center">
-                    <button @click="abrirModalEditar(item)" class="btn btn-outline-primary btn-sm me-2 rounded-pill px-3" title="Editar habitación">
+                    <button @click="abrirModalEditar(item)" class="btn btn-outline-primary btn-sm me-2 rounded-pill px-3" title="Editar usuario">
                       <i class="bi bi-pencil-fill me-1"></i>Editar
                     </button>
-                    <button @click="abrirModalEliminar(item)" class="btn btn-outline-danger btn-sm rounded-pill px-3" title="Eliminar habitación">
+                    <button @click="abrirModalEliminar(item)" class="btn btn-outline-danger btn-sm rounded-pill px-3" title="Eliminar usuario">
                       <i class="bi bi-trash-fill me-1"></i>Eliminar
                     </button>
                   </td>
                 </tr>
               </tbody>
             </table>
+          </div>
+
+          <div v-if="usuarios.length === 0" class="text-center py-5">
+            <i class="bi bi-inbox fs-1 text-muted d-block mb-2"></i>
+            <p class="text-muted fs-5">No hay usuarios registrados.</p>
           </div>
         </div>
       </div>
@@ -200,10 +202,10 @@ onMounted(() => {
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 rounded-4 shadow">
           
-          <div class="modal-header bg-success text-white rounded-top-4">
+          <div class="modal-header bg-primary text-white rounded-top-4">
             <h5 class="modal-title fw-bold" id="usuarioModalLabel">
-              <i class="bi me-2" :class="modoEliminar ? 'bi-exclamation-triangle-fill' : (editando ? 'bi-pencil-fill' : 'bi-plus-circle-fill')"></i>
-              {{ modoEliminar ? 'Confirmar Eliminación' : (editando ? 'Modificar Habitación' : 'Registrar Nueva Habitación') }}
+              <i class="bi me-2" :class="modoEliminar ? 'bi-exclamation-triangle-fill' : (editando ? 'bi-pencil-fill' : 'bi-person-plus-fill')"></i>
+              {{ modoEliminar ? 'Confirmar Eliminación' : (editando ? 'Modificar Usuario' : 'Registrar Nuevo Usuario') }}
             </h5>
             <button type="button" class="btn-close btn-close-white" @click="cerrarModalManualmente" aria-label="Close"></button>
           </div>
@@ -215,7 +217,7 @@ onMounted(() => {
                 <i class="bi bi-exclamation-triangle-fill"></i>
               </div>
               <h4 class="fw-bold text-dark">¿Está completamente seguro?</h4>
-              <p class="text-muted">Se eliminará permanentemente la habitación: <br><strong class="text-dark">{{ form.name }}</strong></p>
+              <p class="text-muted">Se eliminará permanentemente al usuario: <br><strong class="text-dark">{{ form.username }}</strong></p>
               <div class="d-flex justify-content-center gap-2 mt-4">
                 <button type="button" class="btn btn-light rounded-pill px-4" @click="cerrarModalManualmente">Cancelar</button>
                 <button type="button" class="btn btn-danger fw-bold rounded-pill px-4" @click="ejecutarEliminacion">
@@ -227,19 +229,19 @@ onMounted(() => {
             <form v-else @submit.prevent="guardarUsuario">
               <div class="mb-3">
                 <label class="form-label small fw-bold text-uppercase text-secondary">
-                  <i class="bi bi-door-open me-1"></i>Nombre de la Habitación
+                  <i class="bi bi-person-fill me-1"></i>Usuario
                 </label>
-                <input v-model="form.name" type="text" class="form-control" placeholder="Ej: Habitación Deluxe" required>
+                <input v-model="form.username" type="text" class="form-control" placeholder="Nombre de usuario" required>
               </div>
               <div class="mb-3">
                 <label class="form-label small fw-bold text-uppercase text-secondary">
-                  <i class="bi bi-cash me-1"></i>Precio por Noche
+                  <i class="bi bi-envelope-fill me-1"></i>Email
                 </label>
-                <input v-model="form.price" type="number" step="0.01" class="form-control" placeholder="0.00" required>
+                <input v-model="form.email" type="email" class="form-control" placeholder="correo@ejemplo.com" required>
               </div>
               <div class="d-flex justify-content-end gap-2 mt-4">
                 <button type="button" class="btn btn-light rounded-pill px-4" @click="cerrarModalManualmente">Cancelar</button>
-                <button type="submit" class="btn btn-success text-white fw-bold rounded-pill px-4">
+                <button type="submit" class="btn btn-primary text-white fw-bold rounded-pill px-4">
                   <i class="bi bi-floppy-fill me-1"></i>Guardar Datos
                 </button>
               </div>
